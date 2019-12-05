@@ -48,7 +48,11 @@ class Eth
         if (!isset($this->args['agreement'])) $this->args['agreement'] = $this->agreement;
 
         if (!in_array($this->args['agreement'], ['eth', 'token'])) {
-            self::output(10402, '请求异常');
+            self::output(10402, '请传入类型');
+        }
+
+        if (!isset($this->args['method'])) {
+            self::output(10403, '请传入方法名');
         }
 
         $this->agreement = $this->args['agreement'];
@@ -63,7 +67,7 @@ class Eth
             //实例化 以太坊
             if ($this->agreement == 'eth') {
                 if (!in_array($this->args['method'], self::$method['eth'])) {
-                    self::output(10403, 'Eth method not undefined.');
+                    self::output(10404, 'Eth method not undefined.');
                 }
 
                 require_once __DIR__ . '/vendor/autoload.php';
@@ -75,7 +79,7 @@ class Eth
             //实例化 智能合约-代币
             if ($this->agreement == 'token') {
                 if (!in_array($this->args['method'], self::$method['token'])) {
-                    self::output(10403, 'Eth token method not undefined.');
+                    self::output(10404, 'Eth token method not undefined.');
                 }
 
                 require_once __DIR__ . '/contract/Wax.php';
@@ -85,7 +89,7 @@ class Eth
                 $decimals = @json_decode($decimals, true);
 
                 if (!self::isValidAddress($this->args['token_address'])) {
-                    self::output(10404, '请传入正确的合约地址');
+                    self::output(10405, '请传入正确的合约地址');
                 }
 
                 $this->token_address = $this->args['token_address'];
