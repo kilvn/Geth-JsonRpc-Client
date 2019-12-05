@@ -1,7 +1,7 @@
 <?php
 
 require_once 'eth.php';
-new \GethJsonRpcPhpClient\Eth();
+new \kilvn\GethJsonRpcPhpClient\Eth();
 
 #查询指定帐户余额
 //$result = $client->callMethod('eth_getBalance', ['0xf99ce9c17d0b4f5dfcf663b16c95b96fd47fc8ba', 'latest']);

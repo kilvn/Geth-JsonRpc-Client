@@ -1,6 +1,6 @@
 <?php
 
-namespace GethJsonRpcPhpClient;
+namespace kilvn\GethJsonRpcPhpClient;
 
 use function bcadd, bcmul, bcpow, bcmod, bcdiv, bcsub;
 
