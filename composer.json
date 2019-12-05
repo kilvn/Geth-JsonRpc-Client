@@ -1,0 +1,5 @@
+{
+    "require": {
+        "achse/geth-jsonrpc-php-client": "^3.0"
+    }
+}
