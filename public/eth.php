@@ -2,6 +2,7 @@
 
 namespace kilvn\GethJsonRpcPhpClient;
 
+use \Achse\GethJsonRpcPhpClient as Achse;
 use function bcadd, bcmul, bcpow, bcmod, bcdiv, bcsub;
 
 class Eth
@@ -72,21 +73,21 @@ class Eth
                     self::output(10404, 'Eth method not undefined.');
                 }
 
-                require_once __DIR__ . '/vendor/autoload.php';
+                require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-                $httpClient = new \Achse\GethJsonRpcPhpClient\JsonRpc\GuzzleClient(new \Achse\GethJsonRpcPhpClient\JsonRpc\GuzzleClientFactory(), $host, $port);
-                $this->client = new \Achse\GethJsonRpcPhpClient\JsonRpc\Client($httpClient);
+                $httpClient = new Achse\JsonRpc\GuzzleClient(new Achse\JsonRpc\GuzzleClientFactory(), $host, $port);
+                $this->client = new Achse\JsonRpc\Client($httpClient);
             }
 
             //实例化 智能合约-代币
-            if ($this->agreement == 'token') {
-                if (!in_array($this->args['method'], self::$method['token'])) {
+            if ($this->agreement == 'contract') {
+                if (!in_array($this->args['method'], self::$method['contract'])) {
                     self::output(10404, 'Eth token method not undefined.');
                 }
 
-                require_once __DIR__ . '/contract/Wax.php';
+                require_once dirname(__DIR__) . '/contract/Wax.php';
 
-                $decimals_file = realpath(__DIR__) . '/contract/decimals.json';
+                $decimals_file = realpath(dirname(__DIR__)) . '/contract/decimals.json';
                 $decimals = @file_get_contents($decimals_file);
                 $decimals = @json_decode($decimals, true);
 
@@ -100,6 +101,11 @@ class Eth
                 if (empty($decimals[$this->token_address])) {
                     $result = self::_curl("http://api.ethplorer.io/getTokenInfo/{$this->token_address}?apiKey=freekey", [], false, 'GET');
                     $result = @json_decode($result, true);
+
+                    if (isset($result['error'])) {
+                        self::output($result['error']['code'], "error", $result['error']['message']);
+                    }
+
                     if (isset($result['decimals']) && $result['decimals'] > 0) {
                         $this->contract_decimals = $result['decimals'];
 
@@ -202,6 +208,10 @@ class Eth
 
         self::logs($result, __METHOD__);
 
+        if (isset($result['code'])) {
+            self::output($result['code'], "error", $result['message']);
+        }
+
         self::output(10000, "success", $result);
     }
 
@@ -216,6 +226,10 @@ class Eth
         $result = $this->client->getBlockNumber();
 
         self::logs($result, __METHOD__);
+
+        if (isset($result['code'])) {
+            self::output($result['code'], "error", $result['message']);
+        }
 
         self::output(10000, "success", $result);
     }
@@ -240,19 +254,23 @@ class Eth
 
         self::logs($result, __METHOD__);
 
-        $result = [
+        if (isset($result['code'])) {
+            self::output($result['code'], "error", $result['message']);
+        }
+
+        $data = [
             'number' => 0,
             'hex' => '0x0',
         ];
 
-        if (!isset($result['code']) && !empty($result->result) && is_string($result)) {
-            $result = [
-                'number' => self::HexToDec($result) + 292,
-            ];
-            $result['hex'] = self::toHex($result['number']);
+        if (!isset($result['code']) && !empty($result) && is_string($result)) {
+            $number = self::HexToDec($result);
+
+            $data['number'] = (int)$number + 292;
+            $data['hex'] = self::toHex($data['number']);
         }
 
-        self::output(10000, "success", $result);
+        self::output(10000, "success", $data);
     }
 
     /**
@@ -295,6 +313,10 @@ class Eth
         $result = self::getTransactionFee($this->args['from'], $this->args['to'], $this->args['value']);
 
         self::logs($result, __METHOD__);
+
+        if (isset($result['code'])) {
+            self::output($result['code'], "error", $result['message']);
+        }
 
         self::output(10000, "success", $result);
     }
@@ -339,7 +361,7 @@ class Eth
     }
 
     /**
-     * 查询代币转账预估Gas
+     * 代币转账
      * @throws \Exception
      */
     public function token_sendTransaction()
@@ -350,13 +372,13 @@ class Eth
         if (!self::isValidAddress($this->args['to'])) self::output(10011, "to钱包地址格式不正确");
         if (!(floatval($this->args['value']) > 0)) $this->args['value'] = 0;
         if (empty($this->args['passphrase'])) self::output(10013, "请传入密码");
-        $this->args['parameter'] = $this->args['parameter'] > 0 ? intval($this->args['parameter']) : 30;
+        $this->args['parameter'] = $this->args['parameter'] ?? 30;
 
         $this->args['value'] = $this->args['value'] * self::get_token_wei();
 
         if (!empty($this->args['gas'])) $args['gas'] = self::toHex(intval($this->args['gas']));
         if (!empty($this->args['gasPrice'])) $args['gasPrice'] = self::toHex(intval($this->args['gasPrice']));
-        //if (!empty($this->args['nonce'])) $args['nonce'] = self::toHex($this->args['nonce']);
+        if (!empty($this->args['nonce'])) $args['nonce'] = self::toHex($this->args['nonce']);
 
         self::logs($this->args, __METHOD__);
 
@@ -365,9 +387,13 @@ class Eth
             self::output(10014, "钱包解锁失败");
         }
 
-        $result = $this->client->sendWax($this->args['from'], $this->args['to'], $this->args['value'], $args);
+        $result = $this->client->sendWax($this->args['from'], $this->args['to'], $this->args['value'], $this->args);
 
         self::logs($result, __METHOD__);
+
+        if (isset($result['code'])) {
+            self::output($result['code'], "error", $result['message']);
+        }
 
         self::output(10000, "success", ['result' => $result]);
     }
@@ -385,6 +411,10 @@ class Eth
         self::logs($this->args, __METHOD__);
 
         $result = $this->client->getTransactionReceipt($this->args['transaction_address']);
+
+        if (isset($result['code'])) {
+            self::output($result['code'], "error", $result['message']);
+        }
 
         if (isset($result['status'])) {
             $result['status'] = self::HexToDec($result['status']);
@@ -893,10 +923,15 @@ class Eth
      * @param string $hex
      * @return string
      */
-    public static function HexToDec($hex)
+    public static function HexToDec(string $hex): string
     {
-        $utils = new \Achse\GethJsonRpcPhpClient\Utils;
-        return $utils::bigHexToBigDec($hex);
+        $dec = '0';
+        $len = \strlen($hex);
+        for ($i = 1; $i <= $len; $i++) {
+            $dec = bcadd($dec, bcmul(\strval(hexdec($hex[$i - 1])), bcpow('16', \strval($len - $i))));
+        }
+
+        return $dec;
     }
 
     public static function toHex($input)
@@ -950,7 +985,7 @@ class Eth
             ];
 
             if (isset($result->result)) {
-                $result->result = $result->result;
+                $result['result'] = $result->result;
             }
 
             if (count($_error)) {
@@ -958,7 +993,7 @@ class Eth
             }
         }
 
-        $path = realpath(__DIR__) . "/php_api.log";
+        $path = realpath(dirname(__DIR__)) . "/run.log";
         $_method = !empty($method) ? "[方法名:{$method}]\r\n" : "\r\n";
         $result = is_array($result) ? json_encode($result) : $result;
         $content = date("Y-m-d H:i:s", time()) . " {$_method}" . $result . "\r\n\n";
