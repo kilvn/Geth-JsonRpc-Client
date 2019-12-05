@@ -41,8 +41,10 @@ class Eth
         }
 
         $this->args = $_REQUEST;
-        if (empty($this->args['sign']) || !(self::createSign($this->args) === $this->args['sign'])) {
-            self::output(10401, '权限认证失败');
+        if ($this->debug) {
+            if (empty($this->args['sign']) || !(self::createSign($this->args) === $this->args['sign'])) {
+                self::output(10401, '权限认证失败');
+            }
         }
 
         if (!isset($this->args['agreement'])) $this->args['agreement'] = $this->agreement;
@@ -117,6 +119,11 @@ class Eth
         } catch (\Exception $e) {
             self::output(10500, $e->getMessage());
         }
+    }
+
+    public function __call($name, $arguments)
+    {
+        self::output(10500, '不存在的方法名.');
     }
 
     /**
@@ -238,7 +245,7 @@ class Eth
             'hex' => '0x0',
         ];
 
-        if (!isset($result['code']) && !empty($result['result']) && is_string($result)) {
+        if (!isset($result['code']) && !empty($result->result) && is_string($result)) {
             $result = [
                 'number' => self::HexToDec($result) + 292,
             ];
@@ -427,10 +434,14 @@ class Eth
 
         self::logs($result, __METHOD__);
 
-        if (!isset($result['error']['code']) && isset($result['result'])) {
-            $result['result'] = [
-                'hex' => $result['result'],
-                'number' => self::wei_to_eth(self::HexToDec($result['result']))
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
+
+        if (!isset($result['error']['code']) && isset($result->result)) {
+            $result->result = [
+                'hex' => $result->result,
+                'number' => self::wei_to_eth(self::HexToDec($result->result))
             ];
         }
 
@@ -452,6 +463,10 @@ class Eth
 
         self::logs($result, __METHOD__);
 
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
+
         self::output(10000, "success", $result);
     }
 
@@ -464,13 +479,17 @@ class Eth
 
         if (empty($this->args['address'])) self::output(10010, "请传入钱包地址");
         if (empty($this->args['passphrase'])) self::output(10011, "请传入钱包密码");
-        $this->args['parameter'] = $this->args['parameter'] > 0 ? intval($this->args['parameter']) : 30;
+        $this->args['parameter'] = $this->args['parameter'] ?? 30;
 
         self::logs($this->args, __METHOD__);
 
         $result = $this->client->callMethod('personal_unlockAccount', [$this->args['address'], $this->args['passphrase'], $this->args['parameter']]);
 
         self::logs($result, __METHOD__);
+
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
 
         self::output(10000, "success", $result);
     }
@@ -495,6 +514,10 @@ class Eth
 
         self::logs($result, __METHOD__);
 
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
+
         self::output(10000, "success", $result);
     }
 
@@ -512,6 +535,10 @@ class Eth
         $result = $this->client->callMethod('personal_lockAccount', [$this->args['address']]);
 
         self::logs($result, __METHOD__);
+
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
 
         self::output(10000, "success", $result);
     }
@@ -543,10 +570,14 @@ class Eth
 
         self::logs($result, __METHOD__);
 
-        if (!isset($result['error']['code']) && is_string($result['result'])) {
-            $result['result'] = [
-                'hex' => $result['result'],
-                'number' => self::HexToDec($result['result'])
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
+
+        if (isset($result->result)) {
+            $result->result = [
+                'hex' => $result->result,
+                'number' => self::HexToDec($result->result)
             ];
         }
 
@@ -584,6 +615,10 @@ class Eth
 
         self::logs($result, __METHOD__);
 
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
+
         self::output(10000, "success", $result);
     }
 
@@ -617,6 +652,10 @@ class Eth
 
         self::logs($result, __METHOD__);
 
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
+
         self::output(10000, "success", $result);
     }
 
@@ -633,11 +672,15 @@ class Eth
 
         $result = $this->client->callMethod('eth_getTransactionReceipt', [$this->args['transaction_address']]);
 
-        if (isset($result['result']['status'])) {
-            $result['result']['status'] = self::HexToDec($result['result']['status']);
+        self::logs($result, __METHOD__);
+
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
         }
 
-        self::logs($result, __METHOD__);
+        if (isset($result->result->status)) {
+            $result->result->status = self::HexToDec($result->result->status);
+        }
 
         self::output(10000, "success", $result);
     }
@@ -655,10 +698,14 @@ class Eth
 
         self::logs($result, __METHOD__);
 
-        if (!isset($result['error']['code']) && is_string($result['result'])) {
-            $result['result'] = [
-                'hex' => $result['result'],
-                'number' => self::HexToDec($result['result'])
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
+
+        if (isset($result->result)) {
+            $result->result = [
+                'hex' => $result->result,
+                'number' => self::HexToDec($result->result)
             ];
         }
 
@@ -679,6 +726,10 @@ class Eth
         $result = $this->client->callMethod('eth_getCode', [$this->args['address'], '0x2']);
 
         self::logs($result, __METHOD__);
+
+        if (isset($result->error)) {
+            self::output($result->error->code, "error", $result->error->message);
+        }
 
         self::output(10000, "success", $result);
     }
@@ -884,6 +935,29 @@ class Eth
      */
     private static function logs($result, $method = "")
     {
+        if (is_object($result)) {
+            $_error = [];
+            if (isset($result->error)) {
+                $_error = [
+                    'message' => $result->error->message,
+                    'code' => $result->error->code,
+                ];
+            }
+
+            $result = [
+                'id' => $result->id,
+                'jsonrpc' => $result->jsonrpc,
+            ];
+
+            if (isset($result->result)) {
+                $result->result = $result->result;
+            }
+
+            if (count($_error)) {
+                $result['error'] = $_error;
+            }
+        }
+
         $path = realpath(__DIR__) . "/php_api.log";
         $_method = !empty($method) ? "[方法名:{$method}]\r\n" : "\r\n";
         $result = is_array($result) ? json_encode($result) : $result;
