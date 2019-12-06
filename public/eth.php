@@ -505,7 +505,7 @@ class Eth
             self::output($result->error->code, "error", $result->error->message);
         }
 
-        self::output(10000, "success", $result);
+        self::output(10000, "success", $result->result);
     }
 
     /**
