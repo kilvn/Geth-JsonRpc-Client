@@ -44,7 +44,7 @@ class Eth
         $this->args = $_REQUEST;
         if ($this->debug) {
             if (empty($this->args['sign']) || !(self::createSign($this->args) === $this->args['sign'])) {
-                self::output(10401, '权限认证失败');
+                self::output(10401, '鉴权失败');
             }
         }
 
