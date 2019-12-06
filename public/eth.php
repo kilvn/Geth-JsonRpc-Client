@@ -679,14 +679,22 @@ class Eth
             "value" => $this->args['value']
         ];
 
-        $transaction_fee = $this->getTransactionFee($this->args['from'], $this->args['to'], $this->args['value']);
+        // 获取 gas_price
+        $gas_price = $this->client->callMethod('eth_gasPrice', []);
 
-        if (!is_array($transaction_fee)) {
-            self::output(10014, "转账手续费预估失败");
+        if (isset($gas_price->error)) {
+            self::output($gas_price->error->code, "error", $gas_price->error->message);
         }
 
-        $send['gas'] = $transaction_fee['gas']['hex'];
-        $send['gasPrice'] = $transaction_fee['gasPrice']['hex'];
+        // 获取 gas
+        $gas = $this->client->callMethod('eth_estimateGas', [array_merge($send, ["gasPrice" => $gas_price->result])]);
+
+        if (isset($gas->error)) {
+            self::output($gas->error->code, "error", $gas->error->message);
+        }
+
+        $send['gas'] = $gas->result;
+        $send['gasPrice'] = $gas_price->result;
 
         if (!empty($this->args['data'])) $send['nonce'] = self::toHex($this->args['data']);
         if (!empty($this->args['nonce'])) $send['nonce'] = self::toHex($this->args['nonce']);
@@ -701,7 +709,7 @@ class Eth
             self::output($result->error->code, "error", $result->error->message);
         }
 
-        self::output(10000, "success", $result);
+        self::output(10000, "success", $result->result);
     }
 
     /**
