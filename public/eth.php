@@ -376,8 +376,16 @@ class Eth
 
         $this->args['value'] = $this->args['value'] * self::get_token_wei();
 
-        if (!empty($this->args['gas'])) $args['gas'] = self::toHex(intval($this->args['gas']));
-        if (!empty($this->args['gasPrice'])) $args['gasPrice'] = self::toHex(intval($this->args['gasPrice']));
+        $transaction_fee = $this->getTransactionFee($this->args['from'], $this->args['to'], $this->args['value']);
+
+        if (!is_array($transaction_fee)) {
+            self::output(10014, "转账手续费预估失败");
+        }
+
+        $args = [];
+        $args['gas'] = $transaction_fee['gas']['hex'];
+        $args['gasPrice'] = $transaction_fee['gasPrice']['hex'];
+
         if (!empty($this->args['nonce'])) $args['nonce'] = self::toHex($this->args['nonce']);
 
         self::logs($this->args, __METHOD__);
@@ -387,7 +395,7 @@ class Eth
             self::output(10014, "钱包解锁失败");
         }
 
-        $result = $this->client->sendWax($this->args['from'], $this->args['to'], $this->args['value'], $this->args);
+        $result = $this->client->sendWax($this->args['from'], $this->args['to'], $this->args['value'], $args);
 
         self::logs($result, __METHOD__);
 
@@ -671,8 +679,15 @@ class Eth
             "value" => $this->args['value']
         ];
 
-        if (!empty($this->args['gas'])) $send['gas'] = self::toHex(intval($this->args['gas']));
-        if (!empty($this->args['gasPrice'])) $send['gasPrice'] = self::toHex(intval($this->args['gasPrice']));
+        $transaction_fee = $this->getTransactionFee($this->args['from'], $this->args['to'], $this->args['value']);
+
+        if (!is_array($transaction_fee)) {
+            self::output(10014, "转账手续费预估失败");
+        }
+
+        $send['gas'] = $transaction_fee['gas']['hex'];
+        $send['gasPrice'] = $transaction_fee['gasPrice']['hex'];
+
         if (!empty($this->args['data'])) $send['nonce'] = self::toHex($this->args['data']);
         if (!empty($this->args['nonce'])) $send['nonce'] = self::toHex($this->args['nonce']);
 
