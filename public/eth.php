@@ -16,6 +16,8 @@ class Eth
     public $runing = 1;
     protected $_id = 0;
 
+    private $args = [];
+
     //通讯密钥
     const KEYCODE = "oSnei1oqt1bjvee9";
 
@@ -172,7 +174,7 @@ class Eth
 
         self::logs($result, __METHOD__);
 
-        if (intval($result) > 0) {
+        if ($result > 0) {
             $result = (float)$result / self::get_token_wei();
         }
 
