@@ -376,10 +376,14 @@ class Eth
 
         $this->args['value'] = $this->args['value'] * self::get_token_wei();
 
+        if ($this->args['value'] <= 0) {
+            self::output(10014, "发送数量必须大于0");
+        }
+
         $transaction_fee = $this->getTransactionFee($this->args['from'], $this->args['to'], $this->args['value']);
 
         if (!is_array($transaction_fee)) {
-            self::output(10014, "转账手续费预估失败");
+            self::output(10015, "转账手续费预估失败");
         }
 
         $args = [];
@@ -392,7 +396,7 @@ class Eth
 
         $unlockAccount = $this->client->unlockAccount($this->args['from'], $this->args['passphrase'], $this->args['parameter']);
         if (!$unlockAccount) {
-            self::output(10014, "钱包解锁失败");
+            self::output(10016, "钱包解锁失败");
         }
 
         $result = $this->client->sendWax($this->args['from'], $this->args['to'], $this->args['value'], $args);
@@ -403,7 +407,7 @@ class Eth
             self::output($result['code'], "error", $result['message']);
         }
 
-        self::output(10000, "success", ['result' => $result]);
+        self::output(10000, "success", $result);
     }
 
     /**
